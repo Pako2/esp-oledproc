@@ -2,7 +2,7 @@
 
 The **esp-OLEDproc** device fully replaces the server part of the LCDproc system (ie **LCDproc** add-on). Only the client part - the **[XBMC LCDproc](https://kodi.tv/addons/matrix/script.xbmc.lcdproc)** add-on - must be installed in the Kodi media center. It follows that the **esp-OLEDproc** device is completely independent of the platform on which Kodi is installed (LibreELEC, CoreELEC, Windows, Linux, Android ...). The only condition for proper function is the available WiFi signal at the place of installation of the display. Connecting the display to Kodi has never been easier!  
 **esp-OLEDproc** fully supports Kodi native encoding (UTF-8), so accented texts are displayed completely normally (without transcoding to non-accented text)!
-For this to work, the **XBMC LCDproc** add-on needs one very simple modification (adding UTF-8 to the encoding menu). I asked the author of **XBMC LCDproc** some time ago to release a modified version, but (although the modification is really trivial) I failed. That's why I made the modification myself and you can download the modified version [here](https://github.com/Pako2/esp-oledproc/3rdparty/script.xbmc.lcdproc-4.0.0.1.zip).
+For this to work, the **XBMC LCDproc** add-on needs one very simple modification (adding UTF-8 to the encoding menu). I asked the author of **XBMC LCDproc** some time ago to release a modified version, but (although the modification is really trivial) I failed. That's why I made the modification myself and you can download the modified version [here](https://github.com/Pako2/esp-oledproc/raw/master/3rdparty/script.xbmc.lcdproc-4.0.0.1.zip).
 
 ## Preface
 This project is based on a great [esp-rfid](https://github.com/omersiar/esp-rfid) project by Ömer Şiar Baysal.
@@ -27,7 +27,7 @@ There's another thing here. My English is very imperfect, so I'm glad I can use 
 This project still in its development phase. Please feel free to comment or give feedback.
 
 * Get the latest release from [here.](https://github.com/Pako2/esp-oledproc/releases)
-* See [ChangeLog](https://github.com/Pako2/esp-oledproc/blob/dev/CHANGELOG.md)
+* See [ChangeLog](https://github.com/Pako2/esp-oledproc/blob/master/CHANGELOG.md)
 
 ## What You Will Need
 ### Hardware
