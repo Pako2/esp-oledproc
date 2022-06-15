@@ -38,8 +38,7 @@ I bought both modules on Aliexpress. Now that I'm writing this, both together (a
 
 ### Software
 #### Using Compiled Binaries
-Download compiled binaries from GitHub Releases page
-https://github.com/Pako2/esp-oledproc/releases
+Download compiled binaries from GitHub Releases page https://github.com/Pako2/esp-oledproc/releases.  
 On Windows you can use **"flash.bat"**, it will ask you which COM port that ESP is connected and then flashes it. You can use any flashing tool and do the flashing manually. The flashing process itself has been described at numerous places on Internet. I mainly use displays with the SSD1306 controller. Precompiled binaries are for this driver chip. If you use other types of displays, you have to compile them yourself. It's easy, just swap the contents of a single line of source code.  
 Another pitfall could be the font. The great u8g2 library supports UTF-8 encoding, but of course the [u8g2_font_unifont_te](https://github.com/olikraus/u8g2/wiki/fntgrpunifont) font (which I chose) does not contain a complete character set. It only contains a subset of characters, so you may need to use a different font for some languages.
 
