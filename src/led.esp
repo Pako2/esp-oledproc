@@ -1,0 +1,46 @@
+void ledWifiOn()
+{
+	if (config.wifipin != 255)
+	{
+		digitalWrite(config.wifipin, LEDon);
+#ifdef DEBUG
+		Serial.println(F("LED WiFi ON"));
+#endif
+	}
+}
+
+void ledWifiOff()
+{
+	if (config.wifipin != 255)
+	{
+		digitalWrite(config.wifipin, LEDoff);
+#ifdef DEBUG
+		Serial.println(F("LED WiFi OFF"));
+#endif
+	}
+}
+
+// blink when not connected, on when connected
+void ledWifiStatus()
+{
+	if (config.wifipin != 255)
+	{
+		if (!WiFi.isConnected())
+		{
+			if ((currentMillis - wifiPinBlink) > 500)
+			{
+				wifiPinBlink = currentMillis;
+				digitalWrite(config.wifipin, !digitalRead(config.wifipin));
+			}
+		}
+		else
+		{
+			if (!(digitalRead(config.wifipin) == LEDon))
+				digitalWrite(config.wifipin, LEDon);
+		}
+	}
+}
+
+
+
+

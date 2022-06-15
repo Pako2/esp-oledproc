@@ -1,0 +1,20 @@
+{
+  "name": "webfilesbuilder",
+  "version": "1.0.0",
+  "description": "Combine all js and css files into one and gzip them for the ESP-oled project",
+  "scripts": {
+    "start": "gulp"
+  },
+  "author": "ESP-oled Developers",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "gulp": "^4.0.2",
+    "gulp-concat": "^2.6.1",
+    "gulp-flatmap": "^1.0.2",
+    "gulp-gzip": "^1.4.2",
+    "gulp-htmlmin": "^4.0.0",
+    "gulp-uglify": "^3.0.2",
+    "pump": "^3.0.0"
+  },
+  "bin": "bin.js"
+}

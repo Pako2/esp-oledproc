@@ -1,0 +1,108 @@
+void ICACHE_FLASH_ATTR sendStatus()
+{
+	struct ip_info info;
+	FSInfo fsinfo;
+	if (!LittleFS.info(fsinfo))
+	{
+#ifdef DEBUG
+		Serial.print(F("[ WARN ] Error getting info on LittleFS"));
+#endif
+	}
+	DynamicJsonDocument root(1024);
+	root["command"] = "status";
+#ifdef OFFICIALBOARD
+	root["board"] = "brdV2";
+#endif
+	root["heap"] = ESP.getFreeHeap();
+	root["chipid"] = String(ESP.getChipId(), HEX);
+	root["cpu"] = ESP.getCpuFreqMHz();
+	root["sketchsize"] = ESP.getSketchSize();
+	root["availsize"] = ESP.getFreeSketchSpace();
+	root["availspiffs"] = fsinfo.totalBytes - fsinfo.usedBytes;
+	root["spiffssize"] = fsinfo.totalBytes;
+	root["uptime"] = getDeviceUptimeString();
+	root["version"] = VERSION;
+
+	wifi_get_ip_info(STATION_IF, &info);
+	struct station_config conf;
+	wifi_station_get_config(&conf);
+	root["ssid"] = String(reinterpret_cast<char *>(conf.ssid));
+	root["dns"] = printIP(WiFi.dnsIP());
+	root["mac"] = WiFi.macAddress();
+	
+	IPAddress ipaddr = IPAddress(info.ip.addr);
+	IPAddress gwaddr = IPAddress(info.gw.addr);
+	IPAddress nmaddr = IPAddress(info.netmask.addr);
+	root["ip"] = printIP(ipaddr);
+	root["gateway"] = printIP(gwaddr);
+	root["netmask"] = printIP(nmaddr);
+
+	size_t len = measureJson(root);
+	AsyncWebSocketMessageBuffer *buffer = ws.makeBuffer(len);
+	if (buffer)
+	{
+		serializeJson(root, (char *)buffer->get(), len + 1);
+		ws.textAll(buffer);
+	}
+}
+
+void ICACHE_FLASH_ATTR printScanResult(int networksFound)
+{
+	// sort by RSSI
+	int n = networksFound;
+	int indices[n];
+	int skip[n];
+	for (int i = 0; i < networksFound; i++)
+	{
+		indices[i] = i;
+	}
+	for (int i = 0; i < networksFound; i++)
+	{
+		for (int j = i + 1; j < networksFound; j++)
+		{
+			if (WiFi.RSSI(indices[j]) > WiFi.RSSI(indices[i]))
+			{
+				std::swap(indices[i], indices[j]);
+				std::swap(skip[i], skip[j]);
+			}
+		}
+	}
+	DynamicJsonDocument root(512);
+	root["command"] = "ssidlist";
+	JsonArray scan = root.createNestedArray("list");
+	for (int i = 0; i < 5 && i < networksFound; ++i)
+	{
+		JsonObject item = scan.createNestedObject();
+		item["ssid"] = WiFi.SSID(indices[i]);
+		item["bssid"] = WiFi.BSSIDstr(indices[i]);
+		item["rssi"] = WiFi.RSSI(indices[i]);
+		item["channel"] = WiFi.channel(indices[i]);
+		item["enctype"] = WiFi.encryptionType(indices[i]);
+		item["hidden"] = WiFi.isHidden(indices[i]) ? true : false;
+	}
+	size_t len = measureJson(root);
+	AsyncWebSocketMessageBuffer *buffer = ws.makeBuffer(len); //  creates a buffer (len + 1) for you.
+	if (buffer)
+	{
+		serializeJson(root, (char *)buffer->get(), len + 1);
+		ws.textAll(buffer);
+	}
+	WiFi.scanDelete();
+}
+
+void ICACHE_FLASH_ATTR sendTime()
+{
+    time_t now_ = time(nullptr);
+	DynamicJsonDocument root(512);
+	root["command"] = "gettime";
+	//root["epoch"] = now();
+	root["epoch"] = (long long int)now_;
+	root["tzoffset"] = getTZoffset(now_);
+	size_t len = measureJson(root);
+	AsyncWebSocketMessageBuffer *buffer = ws.makeBuffer(len);
+	if (buffer)
+	{
+		serializeJson(root, (char *)buffer->get(), len + 1);
+		ws.textAll(buffer);
+	}
+}

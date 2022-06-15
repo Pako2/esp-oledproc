@@ -1,0 +1,89 @@
+void ICACHE_FLASH_ATTR setupWebServer() {
+	server.addHandler(&ws);
+	ws.onEvent(onWsEvent);
+	server.onNotFound([](AsyncWebServerRequest *request) {
+		AsyncWebServerResponse *response = request->beginResponse(404, "text/plain", "Not found");
+		request->send(response);
+	});
+	server.on("/update", HTTP_POST, [](AsyncWebServerRequest *request) {
+		AsyncWebServerResponse * response = request->beginResponse(200, "text/plain", shouldReboot ? "OK" : "FAIL");
+		response->addHeader("Connection", "close");
+		request->send(response);
+	}, [](AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
+		if (!request->authenticate(httpUsername, config.httpPass)) {
+			return;
+		}
+		if (!index) {
+			Update.runAsync(true);
+			if (!Update.begin((ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000)) {
+				#ifdef DEBUG
+				Update.printError(Serial);
+				#endif
+			}
+		}
+		if (!Update.hasError()) {
+			if (Update.write(data, len) != len) {
+				#ifdef DEBUG
+				Update.printError(Serial);
+				#endif
+			}
+		}
+		if (final) {
+			if (Update.end(true)) {
+#ifdef DEBUG
+				Serial.printf("[ UPDT ] Firmware update finished: %uB\n", index + len);
+#endif
+				shouldReboot = !Update.hasError();
+			} else {
+				#ifdef DEBUG
+				Update.printError(Serial);
+				#endif
+			}
+		}
+	});
+	server.on("/fonts/glyphicons-halflings-regular.woff", HTTP_GET, [](AsyncWebServerRequest *request) {
+		AsyncWebServerResponse *response = request->beginResponse_P(200, "font/woff", glyphicons_halflings_regular_woff_gz, glyphicons_halflings_regular_woff_gz_len);
+		response->addHeader("Content-Encoding", "gzip");
+		request->send(response);
+	});
+	server.on("/css/required.css", HTTP_GET, [](AsyncWebServerRequest *request) {
+		AsyncWebServerResponse *response = request->beginResponse_P(200, "text/css", required_css_gz, required_css_gz_len);
+		response->addHeader("Content-Encoding", "gzip");
+		request->send(response);
+	});
+	server.on("/js/required.js", HTTP_GET, [](AsyncWebServerRequest *request) {
+		AsyncWebServerResponse *response = request->beginResponse_P(200, "text/javascript", required_js_gz, required_js_gz_len);
+		response->addHeader("Content-Encoding", "gzip");
+		request->send(response);
+	});
+	server.on("/js/espoled.js", HTTP_GET, [](AsyncWebServerRequest *request) {
+		AsyncWebServerResponse *response = request->beginResponse_P(200, "text/javascript", espoled_js_gz, espoled_js_gz_len);
+		response->addHeader("Content-Encoding", "gzip");
+		request->send(response);
+	});
+
+	server.on("/index.html", HTTP_GET, [](AsyncWebServerRequest *request) {
+		AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", index_html_gz, index_html_gz_len);
+		response->addHeader("Content-Encoding", "gzip");
+		request->send(response);
+	});
+
+	server.on("/espoled.html", HTTP_GET, [](AsyncWebServerRequest *request) {
+		AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", espoled_html_gz, espoled_html_gz_len);
+		response->addHeader("Content-Encoding", "gzip");
+		request->send(response);
+	});
+
+	if (config.httpPass == NULL) {
+		config.httpPass = strdup("admin");
+	}
+	server.on("/login", HTTP_GET, [](AsyncWebServerRequest *request) {
+		String remoteIP = printIP(request->client()->remoteIP());
+		if (!request->authenticate(httpUsername, config.httpPass)) {
+			return request->requestAuthentication();
+		}
+		request->send(200, "text/plain", "Success");
+	});
+	server.rewrite("/", "/index.html");
+	server.begin();
+}

@@ -1,0 +1,124 @@
+void ICACHE_FLASH_ATTR procMsg(AsyncWebSocketClient *client, size_t sz)
+{
+	// We should always get a JSON object (stringfied) from browser, so parse it
+	DynamicJsonDocument root(8192);
+	char json[sz + 1];
+	memcpy(json, (char *)(client->_tempObject), sz);
+	json[sz] = '\0';
+	auto error = deserializeJson(root, json);
+	if (error)
+	{
+#ifdef DEBUG
+		Serial.println(F("[ WARN ] Couldn't parse WebSocket message"));
+#endif
+		free(client->_tempObject);
+		client->_tempObject = NULL;
+		return;
+	}
+	// Web Browser sends some commands, check which command is given
+	const char *command = root["command"];
+	// Check whatever the command is and act accordingly
+	if (strcmp(command, "configfile") == 0)
+	{
+		File f = LittleFS.open("/config.json", "w+");
+		if (f)
+		{
+			serializeJsonPretty(root, f);
+			f.close();
+			shouldReboot = true;
+		}
+	}
+	else if (strcmp(command, "status") == 0)
+	{
+		sendStatus();
+	}
+	else if (strcmp(command, "restart") == 0)
+	{
+		shouldReboot = true;
+	}
+	else if (strcmp(command, "destroy") == 0)
+	{
+		formatreq = true;
+	}
+	else if (strcmp(command, "scan") == 0)
+	{
+		WiFi.scanNetworksAsync(printScanResult, true);
+	}
+	else if (strcmp(command, "gettime") == 0)
+	{
+		sendTime();
+	}
+	else if (strcmp(command, "settime") == 0)
+	{
+		const char* tz = root["timezone"];
+		time_t t = root["epoch"];
+		setSystemTime(tz, t);
+		sendTime();
+	}
+	else if (strcmp(command, "getconf") == 0)
+	{
+		File configFile = LittleFS.open("/config.json", "r");
+		if (configFile)
+		{
+			size_t len = configFile.size();
+			AsyncWebSocketMessageBuffer *buffer = ws.makeBuffer(len); //  creates a buffer (len + 1) for you.
+			if (buffer)
+			{
+				configFile.readBytes((char *)buffer->get(), len + 1);
+				ws.textAll(buffer);
+			}
+			configFile.close();
+		}
+	}
+	free(client->_tempObject);
+	client->_tempObject = NULL;
+}
+
+// Handles WebSocket Events
+void ICACHE_FLASH_ATTR onWsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len)
+{
+	if (type == WS_EVT_ERROR)
+	{
+#ifdef DEBUG
+		Serial.printf("[ WARN ] WebSocket[%s][%u] error(%u): %s\r\n", server->url(), client->id(), *((uint16_t *)arg), (char *)data);
+#endif
+	}
+	else if (type == WS_EVT_DATA)
+	{
+		AwsFrameInfo *info = (AwsFrameInfo *)arg;
+		uint64_t index = info->index;
+		uint64_t infolen = info->len;
+		if (info->final && info->index == 0 && infolen == len)
+		{
+			//the whole message is in a single frame and we got all of it's data
+			client->_tempObject = malloc(len);
+			if (client->_tempObject != NULL)
+			{
+				memcpy((uint8_t *)(client->_tempObject), data, len);
+			}
+			procMsg(client, infolen);
+		}
+		else
+		{
+			//message is comprised of multiple frames or the frame is split into multiple packets
+			if (index == 0)
+			{
+				if (info->num == 0 && client->_tempObject == NULL)
+				{
+					client->_tempObject = malloc(infolen);
+				}
+			}
+			if (client->_tempObject != NULL)
+			{
+				memcpy((uint8_t *)(client->_tempObject) + index, data, len);
+			}
+			if ((index + len) == infolen)
+			{
+				if (info->final)
+				{
+					procMsg(client, infolen);
+				}
+			}
+		}
+	}
+}

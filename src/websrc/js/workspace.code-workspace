@@ -1,0 +1,45 @@
+{
+	"folders": [
+		{
+			"name": "esp-rcm-master",
+			"path": "..\\..\\..\\..\\esp-rcm\\esp-rcm-master"
+		},
+		{
+			"name": "esp-rfid-dev",
+			"path": "..\\..\\..\\..\\esp-rfid-dev"
+		},
+		{
+			"name": "DebugPrint",
+			"path": "..\\..\\..\\..\\DebugPrint"
+		},
+		{
+			"name": "test",
+			"path": "..\\..\\..\\..\\test"
+		},
+		{
+			"name": "220519-071634-arduino-wifiscan",
+			"path": "..\\..\\..\\..\\220519-071634-arduino-wifiscan"
+		},
+		{
+			"name": "esp-oledproc",
+			"path": "..\\..\\.."
+		},
+		{
+			"name": "OLEDscroll",
+			"path": "..\\..\\..\\..\\OLEDscroll"
+		},
+		{
+			"name": "ESPNTP001",
+			"path": "..\\..\\..\\..\\ESPNTP001"
+		},
+		{
+			"name": "ESPNTP002",
+			"path": "..\\..\\..\\..\\ESPNTP002"
+		},
+		{
+			"name": "NTP-TZ-DST-007a",
+			"path": "..\\..\\..\\..\\NTP-TZ-DST-007a"
+		}
+	],
+	"settings": {}
+}

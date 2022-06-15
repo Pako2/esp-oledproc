@@ -1,0 +1,34 @@
+#include <ESP8266WiFi.h>
+struct Config {
+    bool accessPointMode = false;
+    IPAddress accessPointIp;
+    IPAddress accessPointSubnetIp;
+    unsigned long autoRestartIntervalSeconds = 0;
+    byte bssid[6] = {0, 0, 0, 0, 0, 0};
+    char *deviceHostname = NULL;
+    bool dhcpEnabled = false;
+    IPAddress dnsIp;
+    bool fallbackMode = true;
+    IPAddress gatewayIp;
+    char *httpPass = NULL;
+    IPAddress ipAddress;
+    char *ntpServer = NULL;
+	int ntpInterval = 0;
+    bool present = false;
+    IPAddress subnetIp;
+    const char *ssid;
+    const char *timeZone = "CET-1CEST,M3.5.0,M10.5.0/3";
+	uint8_t wifipin = 255;
+	uint8_t kodipin = 255;
+	uint8_t contrast1 = 150;
+	uint8_t contrast2 = 0;
+	uint8_t contrast3 = 0;
+	uint8_t speed = 5;
+	uint8_t scrollgap = 5;
+	uint8_t clock = 1;
+	uint8_t calendar = 0;
+    uint16_t port = 13666;
+    const char *wifiPassword = NULL;
+    unsigned long wifiTimeout = 0;
+    char wdays[7][5];
+};

@@ -1,0 +1,315 @@
+void procline(char *data, uint8_t len)
+{
+  uint8_t ix = 0;
+  uint8_t quotpos;
+  uint8_t rw;
+  delay(0);
+#ifdef DEBUG
+  Serial.print(F("[ INFO ] data received: "));
+  Serial.println(data);
+#endif
+
+  if (memcmp(data, widgset, 20) == 0)
+  {
+    if (memcmp(data + 20, scroll, 8) == 0)
+    {
+      setmode(0);
+      char *pch;
+      rw = data[28] - 49;
+      pch = (char *)memchr(data, '"', strlen(data));
+      if (pch != NULL)
+      {
+        if (rows[rw].lock2==1)return;
+        rows[rw].lock = 1;
+        quotpos = (uint8_t)(pch - data);
+        if (memcmp(data + quotpos, quots, 2) == 0)
+        {
+          clearLine(rw, 1);
+          return;
+        }
+        else
+        {
+          for (uint16_t j = quotpos + 1; j < len - 1; j++)
+          {
+            if (data[j] != '\\')
+            {
+              rows[rw].input[ix++] = data[j];
+            }
+          }
+          rows[rw].input[ix] = '\0';
+#ifdef DEBUG
+          Serial.print(F("[ INFO ] Text is: "));
+          Serial.println(rows[rw].input);
+#endif
+          delay(0);
+          rows[rw].lastpos = 0;
+          getRowMap(rw);
+          if (rows[rw].type == 3)
+          {
+            u8g2.setDrawColor(0);
+            u8g2.drawBox(2 * CELLWID, CELLHGT * rw, WID - 2 * CELLWID, CELLHGT);
+            u8g2.setDrawColor(1);
+            u8g2.drawUTF8(2 * CELLWID, CELLHGT * rw + 7 * CELLHGT / 8, rows[rw].input);
+          }
+          else if (rows[rw].rowlen > ROW_LEN)
+          {
+            rows[rw].type = 2;
+            rows[rw].lastpos = 0;
+          }
+          else
+          {
+            rows[rw].type = 1;
+            clearLine(rw);
+            u8g2.drawUTF8(0, CELLHGT * rw + 7 * CELLHGT / 8, rows[rw].input);
+          }
+          rows[rw].lock = 0;
+        }
+        return;
+      }
+    }
+    else if (memcmp(data + 20, progrs, 8) == 0)
+    {
+      setmode(0);
+
+      if (memcmp(data + 30, zeros, 5) == 0)
+      {
+        clearLine(data[28] - 49, 1);
+      }
+      else
+      {
+        uint8_t multiplier = 1;
+        uint8_t pix = 0;
+        for (uint16_t pos = len - 1; pos > 33; pos--)
+        {
+          pix += multiplier * (data[pos] - 48);
+          multiplier = 10 * multiplier;
+        }
+        progressbar(data[32] - 49, data[30] - 49, pix);
+      }
+    }
+    else if (memcmp(data + 20, icon, 4) == 0)
+    {
+      setmode(0);
+      rw = data[24] - 49;
+      if (memcmp(data + 26, block, 16) == 0)
+      {
+        clearLine(data[24] - 49, 1);
+        return;
+      }
+      else
+      {
+        uint8_t icn = 5;
+        if (memcmp(data + 30, stop, 4) == 0)
+        {
+          icn = 0;
+        }
+        else if (memcmp(data + 30, play, 4) == 0)
+        {
+          icn = 1;
+        }
+        else if (memcmp(data + 30, pause, 5) == 0)
+        {
+          icn = 2;
+        }
+        else if (memcmp(data + 30, ff, 2) == 0)
+        {
+          icn = 3;
+        }
+        else if (memcmp(data + 30, fr, 2) == 0)
+        {
+          icn = 4;
+        }
+        if (icn < 5)
+        {
+          if (rows[rw].type == 1)
+          {
+            u8g2.setDrawColor(0);
+            u8g2.drawBox(2 * CELLWID, CELLHGT * rw, WID - 2 * CELLWID, CELLHGT);
+            u8g2.setDrawColor(1);
+            u8g2.drawUTF8(2 * CELLWID, CELLHGT * rw + 7 * CELLHGT / 8, rows[rw].input);
+          }
+          rows[rw].type = 3;
+          drawicon(rw, icn);
+        }
+      }
+
+      return;
+    }
+    else if (memcmp(data + 20, bigdig, 8) == 0)
+    {
+      if (memcmp(data + 29, zeros + 1, 4) != 0)
+      {
+        setmode(1);
+        uint8_t digit = data[28] - 49;
+        const uint8_t poss[5] = {0, 28, 50, 72, 100};
+        uint8_t pos = poss[digit];
+        char array[2] = {data[len - 1]};
+        if (digit != 2)
+        {
+          const char *num = array;
+          u8g2.drawStr(pos, 52, num);
+          u8g2.updateDisplay();
+        }
+      }
+    }
+  }
+}
+
+void parsecmd(char *s, uint16_t len, AsyncClient *client)
+{
+  char cmd[128];
+  uint8_t ix = 0;
+  for (uint16_t i = 0; i < len; i++)
+  {
+    cmd[ix++] = s[i];
+    if (ix > 120)
+    {
+      break;
+    }
+    if (s[i] == '\n')
+    {
+      cmd[ix - 1] = '\0';
+      procline(cmd, ix - 1);
+      ix = 0;
+      client->add(succ, 8);
+      client->send();
+    }
+  }
+}
+
+static std::vector<AsyncClient *> clients; // a list to hold all clients
+/* clients events */
+static void handleError(void *arg, AsyncClient *client, int8_t error)
+{
+  // Serial.printf("\n connection error %s from client %s \n", client->errorToString(error), client->remoteIP().toString().c_str());
+}
+
+static void ICACHE_FLASH_ATTR handleData(void *arg, AsyncClient *client, void *data, size_t len)
+{
+  uint16_t ix = client->getindex();
+  sprintf(repstr, succ);
+  if (ix == 0 and len < 536)
+  {
+    memcpy(buff, (char *)data, len);
+    buff[len] = '\0';
+    if (client->space() > 256 && client->canSend())
+    {
+      if (strcmp(buff, hello) == 0)
+      {
+        sprintf(repstr, connect);
+      }
+      else if (strcmp(buff, info) == 0)
+      {
+        sprintf(repstr, infostr);
+
+        if (config.kodipin != 255)
+        {
+          digitalWrite(config.kodipin, LEDon);
+          setmode(0);
+        }
+      }
+      else if (strcmp(buff, noop) == 0)
+      {
+        sprintf(repstr, complete);
+      }
+      else if (strcmp(buff, screenadd) == 0)
+      {
+      }
+      else if (strcmp(buff, priority) == 0)
+      {
+      }
+      else if (memcmp(buff, heartbeat, 26) == 0)
+      {
+      }
+      else if (strcmp(buff, backlighton) == 0)
+      {
+        u8g2.setContrast(config.contrast1);
+      }
+      else if (strcmp(buff, backlightoff) == 0)
+      {
+        u8g2.setContrast(config.contrast2);
+      }
+      else if (strcmp(buff, bye) == 0)
+      {
+        if (config.kodipin != 255)
+        {
+          digitalWrite(config.kodipin, LEDoff);
+          setmode((config.clock == 1 && ntpflag) ? 3 : 2);
+          for (uint8_t r = 0; r < ROWSNUM; r++)
+          {
+            rows[r].type = 0;
+          }
+          u8g2.clear();
+        }
+      }
+      else
+      {
+        parsecmd(buff, len + 1, client);
+        return; //
+      }
+      client->add(repstr, strlen(repstr));
+      client->send();
+    }
+  }
+  else if (ix == 0) // len==536 the first part of a longer message (messagee is split into multiple packets)
+  {
+    memcpy(buff, (char *)data, len);
+    client->setindex(536);
+  }
+  else //
+  {
+    memcpy(buff + ix, (char *)data, len);
+    if (len < 536)
+    {
+      client->setindex(0);
+      buff[ix + len] = '\0';
+      parsecmd(buff, ix + len + 1, client);
+    }
+    else
+    {
+      client->setindex(ix + 536);
+    }
+  }
+}
+
+static void handleDisconnect(void *arg, AsyncClient *client)
+{
+  // Serial.printf("\n client %s disconnected \n", client->remoteIP().toString().c_str());
+  if (config.kodipin != 255)
+  {
+    digitalWrite(config.kodipin, LEDoff);
+    setmode((config.clock == 1 && ntpflag) ? 3 : 2);
+    for (uint8_t r = 0; r < ROWSNUM; r++)
+    {
+      rows[r].type = 0;
+    }
+    u8g2.clear();
+  }
+}
+
+static void handleTimeOut(void *arg, AsyncClient *client, uint32_t time)
+{
+  // Serial.printf("\n client ACK timeout ip: %s \n", client->remoteIP().toString().c_str());
+}
+
+/* server events */
+static void handleNewClient(void *arg, AsyncClient *client)
+{
+   //Serial.printf("\n new client has been connected to server, ip: %s", client->remoteIP().toString().c_str());
+  // add to list
+  clients.push_back(client);
+
+  // register events
+  client->onData(&handleData, NULL);
+  client->onError(&handleError, NULL);
+  client->onDisconnect(&handleDisconnect, NULL);
+  client->onTimeout(&handleTimeOut, NULL);
+  client->setindex(0); //pointer reset 
+}
+
+void tcpserversetup()
+{
+  AsyncServer *server = new AsyncServer(config.port); // start listening on TCP_PORT
+  server->onClient(&handleNewClient, server);
+  server->begin();
+}

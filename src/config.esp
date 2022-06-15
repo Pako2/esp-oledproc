@@ -1,0 +1,101 @@
+bool ICACHE_FLASH_ATTR loadConfiguration(Config &config)
+{
+	File configFile = LittleFS.open("/config.json", "r");
+	if (!configFile)
+	{
+#ifdef DEBUG
+		Serial.println(F("[ WARN ] Failed to open config file"));
+#endif
+		return false;
+	}
+	size_t size = configFile.size();
+	std::unique_ptr<char[]> buf(new char[size]);
+	configFile.readBytes(buf.get(), size);
+	DynamicJsonDocument json(8192);
+	auto error = deserializeJson(json, buf.get());
+	if (error)
+	{
+#ifdef DEBUG
+		Serial.println(F("[ WARN ] Failed to parse config file"));
+#endif
+		return false;
+	}
+#ifdef DEBUG
+	Serial.println(F("[ INFO ] Config file found"));
+#endif
+	JsonObject network = json["network"];
+	JsonObject hardware = json["hardware"];
+	JsonObject general = json["general"];
+	JsonObject display = json["display"];
+	JsonObject ntp = json["ntp"];
+#ifdef DEBUG
+	Serial.println(F("[ INFO ] Trying to setup oled Hardware"));
+#endif
+	if (hardware.containsKey("wifipin"))
+	{
+		config.wifipin = hardware["wifipin"];
+		if (config.wifipin != 255)
+		{
+			pinMode(config.wifipin, OUTPUT);
+			digitalWrite(config.wifipin, LEDoff);
+		}
+	}
+	if (hardware.containsKey("kodipin"))
+	{
+		config.kodipin = hardware["kodipin"];
+		if (config.kodipin != 255)
+		{
+			pinMode(config.kodipin, OUTPUT);
+			digitalWrite(config.kodipin, LEDoff);
+		}
+	}
+
+	config.fallbackMode = network["fallbackmode"] == 1;
+	config.autoRestartIntervalSeconds = general["restart"];
+	config.wifiTimeout = network["offtime"];
+	const char *bssidmac = network["bssid"];
+	if (strlen(bssidmac) > 0)
+		parseBytes(bssidmac, ':', config.bssid, 6, 16);
+	config.deviceHostname = strdup(general["hostnm"]);
+	config.ntpServer = strdup(ntp["server"]);
+	config.ntpInterval = ntp["interval"];
+	config.timeZone = strdup(ntp["timezone"]);
+	config.ssid = strdup(network["ssid"]);
+	config.wifiPassword = strdup(network["pswd"]);
+	config.accessPointMode = network["wmode"] == 1;
+	config.httpPass = strdup(general["pswd"]);
+	config.dhcpEnabled = network["dhcp"] == 1;
+	config.ipAddress.fromString(network["ip"].as<const char*>());
+	config.subnetIp.fromString(network["subnet"].as<const char*>());
+	config.gatewayIp.fromString(network["gateway"].as<const char*>());
+	config.dnsIp.fromString(network["dns"].as<const char*>());
+	config.port = network["ipport"];
+	config.contrast1 = display["contrast1"];
+	config.contrast2 = display["contrast2"];
+	config.contrast3 = display["contrast3"];
+	strcpy(config.wdays[0], display["monday"].as<const char*>());
+	strcpy(config.wdays[1], display["tuesday"].as<const char*>());
+	strcpy(config.wdays[2], display["wednesday"].as<const char*>());
+	strcpy(config.wdays[3], display["thursday"].as<const char*>());
+	strcpy(config.wdays[4], display["friday"].as<const char*>());
+	strcpy(config.wdays[5], display["saturday"].as<const char*>());
+	strcpy(config.wdays[6], display["sunday"].as<const char*>());
+
+    config.speed = display["speed"];
+	refr = 1000/config.speed;
+    config.scrollgap = display["scrollgap"];
+    config.clock = display["clock"];
+    config.calendar = display["calendar"];
+	
+	const char *apsubnetch = "255.255.255.0";
+	
+	config.accessPointSubnetIp.fromString(apsubnetch);
+
+	ws.setAuthentication("admin", config.httpPass);
+
+#ifdef DEBUG
+	Serial.println(F("[ INFO ] Configuration done."));
+#endif
+	config.present = true;
+	return true;
+}
