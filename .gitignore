@@ -1,8 +1,10 @@
+#3rdparty
+3rdparty/*
+
 # vscode
 .vscode
 
 # platformio
-
 .pioenvs
 .piolibdeps
 .clang_complete
