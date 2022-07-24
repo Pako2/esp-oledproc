@@ -29,7 +29,7 @@ bool ICACHE_FLASH_ATTR loadConfiguration(Config &config)
 	JsonObject display = json["display"];
 	JsonObject ntp = json["ntp"];
 #ifdef DEBUG
-	Serial.println(F("[ INFO ] Trying to setup oled Hardware"));
+	Serial.println(F("[ INFO ] Trying to setup OLED display hardware"));
 #endif
 	if (hardware.containsKey("wifipin"))
 	{

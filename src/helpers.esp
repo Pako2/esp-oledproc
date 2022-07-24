@@ -1,6 +1,8 @@
-String ICACHE_FLASH_ATTR printIP(IPAddress adress)
+void ICACHE_FLASH_ATTR printIP(IPAddress adress, char *ipadress)
 {
-	return (String)adress[0] + "." + (String)adress[1] + "." + (String)adress[2] + "." + (String)adress[3];
+	//sprintf(ipadres, "%u.%u.%u.%u",  adress[0], adress[1], adress[2], adress[3]);
+	sprintf(ipadress, "%s", adress.toString().c_str());
+	//return (String)adress[0] + "." + (String)adress[1] + "." + (String)adress[2] + "." + (String)adress[3];
 }
 
 void ICACHE_FLASH_ATTR parseBytes(const char *str, char sep, byte *bytes, int maxBytes, int base)

@@ -177,7 +177,7 @@ void parsecmd(char *s, uint16_t len, AsyncClient *client)
   }
 }
 
-static std::vector<AsyncClient *> clients; // a list to hold all clients
+//static std::vector<AsyncClient *> clients; // a list to hold all clients
 /* clients events */
 static void handleError(void *arg, AsyncClient *client, int8_t error)
 {
@@ -285,6 +285,9 @@ static void handleDisconnect(void *arg, AsyncClient *client)
     }
     u8g2.clear();
   }
+  client->close(true);
+  client->free();
+  delete client;
 }
 
 static void handleTimeOut(void *arg, AsyncClient *client, uint32_t time)
@@ -296,8 +299,9 @@ static void handleTimeOut(void *arg, AsyncClient *client, uint32_t time)
 static void handleNewClient(void *arg, AsyncClient *client)
 {
    //Serial.printf("\n new client has been connected to server, ip: %s", client->remoteIP().toString().c_str());
+
   // add to list
-  clients.push_back(client);
+  //clients.push_back(client);
 
   // register events
   client->onData(&handleData, NULL);

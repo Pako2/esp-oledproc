@@ -118,30 +118,34 @@ void scrollUTF8(uint8_t row)
 {
   uint8_t k = 0;
   uint8_t pos = rows[row].lastpos;
-  if (pos <= config.scrollgap)
+  int chars;
+  uint8_t first;
+  uint8_t end;
+  int spaces;
+  //if (pos <= config.scrollgap)
+  if (pos < config.scrollgap)
   {
-    for (uint8_t i = 0; i < config.scrollgap - pos; i++)
-    {
-      rows[row].work[k++] = ' ';
-    }
+    chars = config.scrollgap - pos;
+    memcpy(rows[row].work, gap, chars);
+    k += chars;
   }
-  uint8_t first = (pos < config.scrollgap) ? 0 : pos - config.scrollgap;
-  uint8_t end = ((first + ROW_LEN - k) < rows[row].rowlen) ? first + ROW_LEN - k : rows[row].rowlen;
+  first = (pos < config.scrollgap) ? 0 : pos - config.scrollgap;
+  end = ((first + ROW_LEN - k) < rows[row].rowlen) ? first + ROW_LEN - k : rows[row].rowlen;
   end = (end < rows[row].rowlen) ? rows[row].rowmap[end] : strlen(rows[row].input);
-  for (uint8_t i = rows[row].rowmap[first]; i < end; i++)
-  {
-    rows[row].work[k++] = rows[row].input[i];
-  }
-  int spaces = pos + ROW_LEN - config.scrollgap - rows[row].rowlen;
+  chars = end - first;
+  memcpy(rows[row].work + k, (char *)(rows[row].input + rows[row].rowmap[first]), chars);
+  k += chars;
+  spaces = pos + ROW_LEN - config.scrollgap - rows[row].rowlen;
   if (spaces > 0)
   {
-    for (uint8_t i = 0; i < min((uint8_t)spaces, config.scrollgap); i++)
+    chars = min((uint8_t)spaces, config.scrollgap);
+    memcpy(rows[row].work + k, gap, chars);
+    k += chars;
+    chars = spaces - config.scrollgap;
+    if (chars > 0)
     {
-      rows[row].work[k++] = ' ';
-    }
-    for (int i = 0; i < spaces - config.scrollgap; i++)
-    {
-      rows[row].work[k++] = rows[row].input[i];
+      memcpy(rows[row].work + k, (char *)(rows[row].input), chars);
+      k += chars;
     }
   }
   rows[row].work[k] = '\0';
@@ -233,7 +237,7 @@ void displayloop(void)
       {
         step = 0;
         colon = !colon;
-        drawColon((config.calendar==1) ? 38 : 27, colon);
+        drawColon((config.calendar == 1) ? 38 : 27, colon);
         u8g2.updateDisplay();
       }
       nw = time(nullptr);
@@ -248,7 +252,7 @@ void displayloop(void)
         sprintf(buffer, "%02d", Minute);
         u8g2.setFont(BIGFONT);
         const char *val_ = buffer;
-        uint8_t vpos = (config.calendar==1) ? 63 : 52;
+        uint8_t vpos = (config.calendar == 1) ? 63 : 52;
         u8g2.drawStr(72, vpos, val_);
         uint8_t Hour = lt->tm_hour;
         if (Hour != oldhour)
@@ -259,7 +263,7 @@ void displayloop(void)
           sprintf(buffer, "%02d", Hour);
           const char *val_ = buffer;
           u8g2.drawStr(0, vpos, val_);
-          if (config.calendar==1)
+          if (config.calendar == 1)
           {
             uint8_t Day = lt->tm_mday;
             if (Day != oldday)

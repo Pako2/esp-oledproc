@@ -62,13 +62,10 @@ deviceUptime ICACHE_FLASH_ATTR getDeviceUptime()
   return uptime;
 }
 
-String ICACHE_FLASH_ATTR getDeviceUptimeString()
+void ICACHE_FLASH_ATTR getDeviceUptimeString(char *uptimestr)
 {
   deviceUptime uptime = getDeviceUptime();
-  return String(uptime.days) + " days, " +
-         String(uptime.hours) + " hours, " +
-         String(uptime.mins) + " mins, " +
-         String(uptime.secs) + " secs";
+  sprintf(uptimestr, "%ld days, %ld hours, %ld mins, %ld secs", uptime.days, uptime.hours, uptime.mins, uptime.secs);
 }
 
 void ICACHE_FLASH_ATTR setSystemTime(const char *tz, time_t epch)

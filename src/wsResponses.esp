@@ -14,28 +14,40 @@ void ICACHE_FLASH_ATTR sendStatus()
 	root["board"] = "brdV2";
 #endif
 	root["heap"] = ESP.getFreeHeap();
-	root["chipid"] = String(ESP.getChipId(), HEX);
+	char chipid[7];
+	sprintf(chipid, "%06X", ESP.getChipId());
+	root["chipid"] = chipid;
 	root["cpu"] = ESP.getCpuFreqMHz();
 	root["sketchsize"] = ESP.getSketchSize();
 	root["availsize"] = ESP.getFreeSketchSpace();
 	root["availspiffs"] = fsinfo.totalBytes - fsinfo.usedBytes;
 	root["spiffssize"] = fsinfo.totalBytes;
-	root["uptime"] = getDeviceUptimeString();
+	char dus[64];
+    getDeviceUptimeString(dus);
+	root["uptime"] = dus;
 	root["version"] = VERSION;
 
 	wifi_get_ip_info(STATION_IF, &info);
 	struct station_config conf;
 	wifi_station_get_config(&conf);
-	root["ssid"] = String(reinterpret_cast<char *>(conf.ssid));
-	root["dns"] = printIP(WiFi.dnsIP());
-	root["mac"] = WiFi.macAddress();
-	
+	root["ssid"] = conf.ssid;
 	IPAddress ipaddr = IPAddress(info.ip.addr);
 	IPAddress gwaddr = IPAddress(info.gw.addr);
 	IPAddress nmaddr = IPAddress(info.netmask.addr);
-	root["ip"] = printIP(ipaddr);
-	root["gateway"] = printIP(gwaddr);
-	root["netmask"] = printIP(nmaddr);
+	root["mac"] = WiFi.macAddress();
+
+	char ip1[16];
+	char ip2[16];
+	char ip3[16];
+	char ip4[16];
+	printIP(WiFi.dnsIP(), ip1);
+	printIP(ipaddr, ip2);
+	printIP(gwaddr, ip3);
+	printIP(nmaddr, ip4);
+	root["dns"] = ip1;	
+	root["ip"] = ip2;
+	root["gateway"] = ip3;
+    root["netmask"] = ip4;
 
 	size_t len = measureJson(root);
 	AsyncWebSocketMessageBuffer *buffer = ws.makeBuffer(len);
@@ -95,7 +107,6 @@ void ICACHE_FLASH_ATTR sendTime()
     time_t now_ = time(nullptr);
 	DynamicJsonDocument root(512);
 	root["command"] = "gettime";
-	//root["epoch"] = now();
 	root["epoch"] = (long long int)now_;
 	root["tzoffset"] = getTZoffset(now_);
 	size_t len = measureJson(root);

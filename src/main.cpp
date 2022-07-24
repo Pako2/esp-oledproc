@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
  */
-#define VERSION "0.0.1"
+#define VERSION "0.0.2"
 
 #include "Arduino.h"
 #include "LittleFS.h"
@@ -349,6 +349,7 @@ AsyncWebSocket ws("/ws");
 #define LEDon LOW
 #define ROWSNUM 4
 #define ROW_LEN 16
+const char gap[ROW_LEN+1] = "                ";
 #define WID 128
 #define HGT 64
 #define CELLWID 8
@@ -443,16 +444,16 @@ void ICACHE_FLASH_ATTR setup()
 #ifdef DEBUG
 	Serial.begin(115200);
 	Serial.println();
-	Serial.print(F("[ INFO ] ESP oled v"));
+	Serial.print(F("\n\n[ INFO ] ESP oled v"));
 	Serial.println(VERSION);
 	uint32_t realSize = ESP.getFlashChipRealSize();
 	uint32_t ideSize = ESP.getFlashChipSize();
 	FlashMode_t ideMode = ESP.getFlashChipMode();
-	Serial.printf("Flash real id:   %08X\n", ESP.getFlashChipId());
-	Serial.printf("Flash real size: %u\n\n", realSize);
-	Serial.printf("Flash ide  size: %u\n", ideSize);
-	Serial.printf("Flash ide speed: %u\n", ESP.getFlashChipSpeed());
-	Serial.printf("Flash ide mode:  %s\n", (ideMode == FM_QIO ? "QIO" : ideMode == FM_QOUT ? "QOUT"
+	Serial.printf("[ INFO ] Flash real id:   %08X\r", ESP.getFlashChipId());
+	Serial.printf("[ INFO ] Flash real size: %u\r", realSize);
+	Serial.printf("[ INFO ] Flash ide  size: %u\r", ideSize);
+	Serial.printf("[ INFO ] Flash ide speed: %u\r", ESP.getFlashChipSpeed());
+	Serial.printf("[ INFO ] Flash ide mode:  %s\r\r", (ideMode == FM_QIO ? "QIO" : ideMode == FM_QOUT ? "QOUT"
 																	: ideMode == FM_DIO	   ? "DIO"
 																	: ideMode == FM_DOUT   ? "DOUT"
 																						   : "UNKNOWN"));
@@ -474,7 +475,6 @@ void ICACHE_FLASH_ATTR setup()
 		else
 		{
 #ifdef DEBUG
-			Serial.println(F(" failed!"));
 			Serial.println(F("[ WARN ] Could not format filesystem!"));
 #endif
 		}
